@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+backend/venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.local
+
+# App data
+.rightclick-ai/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Build output
+dist/
+build/
+out/
+
+# Logs
+*.log

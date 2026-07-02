@@ -1,0 +1,19 @@
+{
+  "name": "rightclick-ai",
+  "version": "0.1.0",
+  "description": "AI-powered right-click context menu assistant for Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["ai", "context-menu", "productivity", "windows"],
+  "author": "Right Click AI",
+  "license": "MIT",
+  "dependencies": {
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "electron": "^35.1.5"
+  }
+}

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Right Click AI — Settings</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <style>
+    body {
+      background: var(--bg-primary);
+      overflow: hidden;
+    }
+
+    .settings-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: var(--bg-primary);
+    }
+
+    /* Title Bar */
+    .settings-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-lg);
+      -webkit-app-region: drag;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .settings-titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .settings-logo {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .settings-title-text h1 {
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      color: var(--text-primary);
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .settings-title-text span {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .settings-titlebar-controls {
+      display: flex;
+      gap: var(--space-xs);
+      -webkit-app-region: no-drag;
+    }
+
+    /* Layout */
+    .settings-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .settings-sidebar {
+      width: 200px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      padding: var(--space-md);
+      flex-shrink: 0;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: var(--font-size-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      margin-bottom: 2px;
+    }
+
+    .sidebar-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .sidebar-item.active {
+      background: var(--accent-subtle);
+      color: var(--accent-secondary);
+      border: 1px solid rgba(139, 92, 246, 0.12);
+    }
+
+    .sidebar-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Content */
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-xl) var(--space-2xl);
+    }
+
+    .settings-section {
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .settings-section.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .section-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-xl);
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: var(--space-xl);
+    }
+
+    .form-label {
+      display: block;
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .form-hint {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-top: var(--space-xs);
+    }
+
+    select.input {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a5b5' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    /* Provider Cards */
+    .provider-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-lg);
+      transition: all var(--transition-fast);
+    }
+
+    .provider-card:hover {
+      border-color: var(--border-default);
+    }
+
+    .provider-card.active-provider {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 1px var(--accent-primary), 0 0 12px var(--accent-glow);
+    }
+
+    .provider-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-md);
+    }
+
+    .provider-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .provider-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: var(--bg-tertiary);
+    }
+
+    .provider-name {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .provider-type {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .provider-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    /* Toggle Switch */
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      cursor: pointer;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      transition: all var(--transition-fast);
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      background: var(--text-tertiary);
+      border-radius: 50%;
+      transition: all var(--transition-fast);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(20px);
+      background: white;
+    }
+
+    .provider-fields {
+      display: grid;
+      gap: var(--space-md);
+    }
+
+    .provider-fields .form-group {
+      margin-bottom: 0;
+    }
+
+    .use-btn {
+      margin-top: var(--space-md);
+    }
+
+    /* Custom Prompts */
+    .prompt-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .prompt-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+    }
+
+    .prompt-item:hover {
+      border-color: var(--border-default);
+    }
+
+    .prompt-item-icon {
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      flex-shrink: 0;
+    }
+
+    .prompt-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .prompt-item-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: var(--font-size-md);
+    }
+
+    .prompt-item-desc {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .prompt-item-types {
+      display: flex;
+      gap: var(--space-xs);
+    }
+
+    .prompt-type-tag {
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .prompt-item-actions {
+      display: flex;
+      gap: var(--space-xs);
+      flex-shrink: 0;
+    }
+
+    /* About section */
+    .about-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2xl);
+      text-align: center;
+    }
+
+    .about-logo {
+      width: 64px;
+      height: 64px;
+      background: var(--gradient-primary);
+      border-radius: var(--radius-lg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin-bottom: var(--space-lg);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .about-name {
+      font-size: var(--font-size-2xl);
+      font-weight: 700;
+      background: var(--gradient-accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: var(--space-xs);
+    }
+
+    .about-version {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-lg);
+    }
+
+    .about-desc {
+      color: var(--text-secondary);
+      font-size: var(--font-size-md);
+      max-width: 400px;
+      margin: 0 auto var(--space-xl);
+      line-height: 1.6;
+    }
+
+    .hotkey-display {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      font-family: 'Cascadia Code', monospace;
+      font-size: var(--font-size-md);
+      color: var(--accent-secondary);
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+      box-shadow: var(--shadow-lg);
+      animation: slideUp 0.3s ease-out;
+      z-index: 1000;
+      display: none;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .toast.success {
+      border-color: var(--success);
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container">
+    <!-- Title Bar -->
+    <div class="settings-titlebar">
+      <div class="settings-titlebar-left">
+        <div class="settings-logo">⚡</div>
+        <div class="settings-title-text">
+          <h1>Right Click AI</h1>
+          <span>Settings & Configuration</span>
+        </div>
+      </div>
+      <div class="settings-titlebar-controls">
+        <button class="btn-icon" id="minimizeBtn">─</button>
+        <button class="btn-icon" id="closeBtn">✕</button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="settings-body">
+      <!-- Sidebar -->
+      <nav class="settings-sidebar">
+        <div class="sidebar-item active" data-section="general">
+          <span class="sidebar-icon">⚙️</span>
+          <span>Umum</span>
+        </div>
+        <div class="sidebar-item" data-section="providers">
+          <span class="sidebar-icon">🧠</span>
+          <span>AI Provider</span>
+        </div>
+        <div class="sidebar-item" data-section="prompts">
+          <span class="sidebar-icon">💬</span>
+          <span>Custom Prompt</span>
+        </div>
+        <div class="sidebar-item" data-section="about">
+          <span class="sidebar-icon">ℹ️</span>
+          <span>Tentang</span>
+        </div>
+      </nav>
+
+      <!-- Content -->
+      <div class="settings-content">
+
+        <!-- General Section -->
+        <div class="settings-section active" id="section-general">
+          <div class="section-title">Pengaturan Umum</div>
+          <div class="section-desc">Konfigurasi hotkey, bahasa, dan tampilan.</div>
+
+          <div class="form-group">
+            <label class="form-label">Hotkey</label>
+            <input type="text" class="input" id="hotkeyInput" value="CommandOrControl+Shift+Q" readonly style="cursor: pointer; max-width: 300px;">
+            <div class="form-hint">Klik untuk mengubah. Tekan kombinasi tombol baru, lalu Enter untuk konfirmasi.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bahasa Target Default</label>
+            <select class="input" id="languageSelect" style="max-width: 300px;">
+              <option value="id">🇮🇩 Bahasa Indonesia</option>
+              <option value="en">🇺🇸 English</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="ar">🇸🇦 العربية</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Streaming Response</label>
+            <label class="toggle">
+              <input type="checkbox" id="streamToggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="form-hint">Tampilkan jawaban AI secara real-time (kata per kata).</div>
+          </div>
+        </div>
+
+        <!-- Providers Section -->
+        <div class="settings-section" id="section-providers">
+          <div class="section-title">AI Provider</div>
+          <div class="section-desc">Kelola koneksi ke model AI lokal dan cloud. Provider aktif ditandai dengan border ungu.</div>
+
+          <!-- Ollama -->
+          <div class="provider-card" id="card-ollama">
+            <div class="provider-header">
+              <div class="provider-info">
+                <div class="provider-icon">🦙</div>
+                <div>
+                  <div class="provider-name">Ollama</div>
+                  <div class="provider-type">Local AI · Gratis</div>
+                </div>
+              </div>
+              <div class="provider-status">
+                <span class="badge" id="status-ollama">⏳ Checking...</span>
+              </div>
+            </div>
+            <div class="provider-fields">
+              <div class="form-group">
+                <label class="form-label">Base URL</label>
+                <input type="text" class="input" id="ollama-url" value="http://localhost:11434" placeholder="http://localhost:11434">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model Default</label>
+                <select class="input" id="ollama-model">
+                  <option value="llama3.2">llama3.2</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary use-btn" onclick="setActiveProvider('ollama')">Gunakan Ollama</button>
+          </div>
+
+          <!-- OpenAI -->
+          <div class="provider-card" id="card-openai">
+            <div class="provider-header">
+              <div class="provider-info">
+                <div class="provider-icon">🤖</div>
+                <div>
+                  <div class="provider-name">OpenAI</div>
+                  <div class="provider-type">Cloud · BYOK</div>
+                </div>
+              </div>
+              <div class="provider-status">
+                <span class="badge" id="status-openai">—</span>
+              </div>
+            </div>
+            <div class="provider-fields">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="input" id="openai-key" placeholder="sk-...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model Default</label>
+                <select class="input" id="openai-model">
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="o3-mini">o3-mini</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary use-btn" onclick="saveAndUseProvider('openai')">Simpan & Gunakan</button>
+          </div>
+
+          <!-- Gemini -->
+          <div class="provider-card" id="card-gemini">
+            <div class="provider-header">
+              <div class="provider-info">
+                <div class="provider-icon">✨</div>
+                <div>
+                  <div class="provider-name">Google Gemini</div>
+                  <div class="provider-type">Cloud · BYOK</div>
+                </div>
+              </div>
+              <div class="provider-status">
+                <span class="badge" id="status-gemini">—</span>
+              </div>
+            </div>
+            <div class="provider-fields">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="input" id="gemini-key" placeholder="AIza...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model Default</label>
+                <select class="input" id="gemini-model">
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary use-btn" onclick="saveAndUseProvider('gemini')">Simpan & Gunakan</button>
+          </div>
+
+          <!-- Anthropic -->
+          <div class="provider-card" id="card-anthropic">
+            <div class="provider-header">
+              <div class="provider-info">
+                <div class="provider-icon">🧬</div>
+                <div>
+                  <div class="provider-name">Anthropic</div>
+                  <div class="provider-type">Cloud · BYOK</div>
+                </div>
+              </div>
+              <div class="provider-status">
+                <span class="badge" id="status-anthropic">—</span>
+              </div>
+            </div>
+            <div class="provider-fields">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="input" id="anthropic-key" placeholder="sk-ant-...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model Default</label>
+                <select class="input" id="anthropic-model">
+                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                  <option value="claude-haiku-4-20250414">Claude Haiku 4</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary use-btn" onclick="saveAndUseProvider('anthropic')">Simpan & Gunakan</button>
+          </div>
+
+          <!-- OpenRouter -->
+          <div class="provider-card" id="card-openrouter">
+            <div class="provider-header">
+              <div class="provider-info">
+                <div class="provider-icon">🌐</div>
+                <div>
+                  <div class="provider-name">OpenRouter</div>
+                  <div class="provider-type">Cloud · Ratusan Model</div>
+                </div>
+              </div>
+              <div class="provider-status">
+                <span class="badge" id="status-openrouter">—</span>
+              </div>
+            </div>
+            <div class="provider-fields">
+              <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="input" id="openrouter-key" placeholder="sk-or-...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Model Default</label>
+                <input type="text" class="input" id="openrouter-model" value="meta-llama/llama-3.3-70b-instruct" placeholder="model-name">
+              </div>
+            </div>
+            <button class="btn btn-primary use-btn" onclick="saveAndUseProvider('openrouter')">Simpan & Gunakan</button>
+          </div>
+        </div>
+
+        <!-- Custom Prompts Section -->
+        <div class="settings-section" id="section-prompts">
+          <div class="section-title">Custom Prompts</div>
+          <div class="section-desc">Kelola aksi AI kustom. Ini akan muncul di menu popup saat kamu klik kanan.</div>
+
+          <div class="prompt-list" id="promptList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="settings-section" id="section-about">
+          <div class="about-card">
+            <div class="about-logo">⚡</div>
+            <div class="about-name">Right Click AI</div>
+            <div class="about-version">Version 0.1.0 · MVP</div>
+            <div class="about-desc">
+              Asisten AI yang terintegrasi langsung dengan workflow kamu.
+              Sorot teks, tekan hotkey, dan dapatkan jawaban instan dari AI favorit kamu.
+            </div>
+            <div class="hotkey-display" id="aboutHotkey">
+              Ctrl + Shift + Q
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/settings.js"></script>
+</body>
+</html>

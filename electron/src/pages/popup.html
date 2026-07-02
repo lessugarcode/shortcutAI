@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Right Click AI — Actions</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <style>
+    body {
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .popup-container {
+      width: 300px;
+      max-height: 400px;
+      overflow: hidden;
+      animation: scaleIn 0.2s ease-out;
+    }
+
+    .popup-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-lg);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .popup-header-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--gradient-primary);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .popup-header-text {
+      flex: 1;
+    }
+
+    .popup-header-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .popup-header-subtitle {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .popup-content-type {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      padding: var(--space-xs) var(--space-sm);
+      margin: var(--space-sm) var(--space-lg);
+      background: var(--accent-subtle);
+      border: 1px solid rgba(139, 92, 246, 0.12);
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      color: var(--accent-secondary);
+      width: fit-content;
+    }
+
+    .popup-actions {
+      padding: var(--space-sm);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .action-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+    }
+
+    .action-item:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-subtle);
+    }
+
+    .action-item:active {
+      background: var(--bg-active);
+      transform: scale(0.98);
+    }
+
+    .action-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+
+    .action-item:hover .action-icon {
+      background: var(--accent-subtle);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+    }
+
+    .action-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .action-name {
+      font-size: var(--font-size-md);
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .action-desc {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .action-arrow {
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+      opacity: 0;
+      transition: all var(--transition-fast);
+      transform: translateX(-4px);
+    }
+
+    .action-item:hover .action-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    /* Ask AI special input */
+    .ask-ai-container {
+      padding: var(--space-sm) var(--space-lg) var(--space-md);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .ask-ai-input-wrapper {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .ask-ai-input {
+      flex: 1;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .ask-ai-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px var(--accent-subtle);
+    }
+
+    .ask-ai-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .ask-ai-send {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .ask-ai-send:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Loading state */
+    .loading-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-xl);
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    .loading-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      margin: 0 3px;
+      animation: pulse 1.4s infinite ease-in-out;
+    }
+
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Translate language selector */
+    .lang-select-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border-radius: var(--radius-xl);
+      z-index: 10;
+      animation: fadeIn 0.15s ease-out;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .lang-select-overlay.active {
+      display: block;
+    }
+
+    .lang-back {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-sm);
+    }
+
+    .lang-back:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .lang-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-size: var(--font-size-md);
+    }
+
+    .lang-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .lang-flag {
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-container glass-card" id="popup">
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="popup-header-icon">⚡</div>
+      <div class="popup-header-text">
+        <div class="popup-header-title">Right Click AI</div>
+        <div class="popup-header-subtitle" id="previewText">Memproses...</div>
+      </div>
+    </div>
+
+    <!-- Content Type Badge -->
+    <div class="popup-content-type" id="contentTypeBadge" style="display: none;">
+      <span id="contentTypeIcon">📝</span>
+      <span id="contentTypeLabel">Teks</span>
+    </div>
+
+    <!-- Action List -->
+    <div class="popup-actions" id="actionList">
+      <div class="loading-indicator">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+    </div>
+
+    <!-- Ask AI Input -->
+    <div class="ask-ai-container" id="askAiContainer" style="display: none;">
+      <div class="ask-ai-input-wrapper">
+        <input
+          type="text"
+          class="ask-ai-input"
+          id="askAiInput"
+          placeholder="Tanya sesuatu ke AI..."
+          autocomplete="off"
+        >
+        <button class="ask-ai-send" id="askAiSend" data-tooltip="Kirim">
+          ➤
+        </button>
+      </div>
+    </div>
+
+    <!-- Language Select Overlay -->
+    <div class="lang-select-overlay" id="langOverlay">
+      <div class="lang-back" id="langBack">← Kembali</div>
+      <div id="langList"></div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script src="../js/popup.js"></script>
+</body>
+</html>
