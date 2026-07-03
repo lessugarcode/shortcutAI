@@ -9,7 +9,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from config import config_manager, AppSettings, CustomPrompt
+from config import config_manager, CustomPrompt
+from utils.security import mask_api_key
+from services.actions import clear_provider_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["Settings"])
@@ -51,11 +53,7 @@ async def get_settings() -> dict:
     # Mask API keys for security
     for provider in ["openai", "gemini", "anthropic", "openrouter"]:
         if data.get(provider, {}).get("api_key"):
-            key = data[provider]["api_key"]
-            if len(key) > 8:
-                data[provider]["api_key"] = key[:4] + "..." + key[-4:]
-            else:
-                data[provider]["api_key"] = "****"
+            data[provider]["api_key"] = mask_api_key(data[provider]["api_key"])
     
     return data
 
@@ -69,17 +67,14 @@ async def update_settings(req: UpdateSettingsRequest) -> dict:
             return config_manager.settings.model_dump()
         
         new_settings = config_manager.update_settings(updates)
+        clear_provider_cache()
         logger.info(f"Settings updated: {list(updates.keys())}")
         
         result = new_settings.model_dump()
         # Mask API keys in response
         for provider in ["openai", "gemini", "anthropic", "openrouter"]:
             if result.get(provider, {}).get("api_key"):
-                key = result[provider]["api_key"]
-                if len(key) > 8:
-                    result[provider]["api_key"] = key[:4] + "..." + key[-4:]
-                else:
-                    result[provider]["api_key"] = "****"
+                result[provider]["api_key"] = mask_api_key(result[provider]["api_key"])
         
         return result
     except Exception as e:

@@ -69,6 +69,7 @@ function startStreaming(actionData) {
   const meta = ACTION_META[actionData.action_id] || { icon: '⚡', name: actionData.action_id };
   resultActionIcon.textContent = meta.icon;
   resultActionName.textContent = meta.name;
+  document.getElementById('resultProvider').textContent = actionData.provider ? ` · ${actionData.provider}` : '';
 
   // Reset
   fullText = '';
@@ -108,8 +109,8 @@ function renderMarkdown(text, isStreaming) {
   const resultContent = document.getElementById('resultContent');
 
   // Simple markdown rendering
-  let html = text
-    // Code blocks
+  let html = escapeHtml(text)
+    // Code blocks (protected from subsequent regex)
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
     // Inline code
     .replace(/`([^`]+)`/g, '<code>$1</code>')

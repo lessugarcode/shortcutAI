@@ -13,14 +13,17 @@ from providers.openai_provider import OpenAIProvider
 from providers.gemini import GeminiProvider
 from providers.anthropic_provider import AnthropicProvider
 from providers.openrouter import OpenRouterProvider
-from services.context_detector import detect_content_type
 
 logger = logging.getLogger(__name__)
+
+# Provider singleton cache for connection reuse
+_provider_cache: dict = {}
 
 
 def get_provider(provider_name: Optional[str] = None) -> BaseProvider:
     """
     Get an AI provider instance based on settings.
+    Providers are cached until settings change.
     
     Args:
         provider_name: Override the active provider from settings.
@@ -34,39 +37,47 @@ def get_provider(provider_name: Optional[str] = None) -> BaseProvider:
     settings = config_manager.settings
     name = provider_name or settings.active_provider
     
-    if name == "ollama":
-        return OllamaProvider(base_url=settings.ollama.base_url)
+    cache_key = f"{name}_{settings.ollama.base_url if name == 'ollama' else getattr(getattr(settings, name, None), 'api_key', '')}"
     
+    if cache_key in _provider_cache:
+        return _provider_cache[cache_key]
+    
+    if name == "ollama":
+        provider = OllamaProvider(base_url=settings.ollama.base_url)
     elif name == "openai":
         cfg = settings.openai
         if not cfg.api_key:
             raise ValueError("OpenAI API key not configured. Go to Settings > AI Providers.")
-        return OpenAIProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gpt-4o-mini")
-    
+        provider = OpenAIProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gpt-4o-mini")
     elif name == "gemini":
         cfg = settings.gemini
         if not cfg.api_key:
             raise ValueError("Gemini API key not configured. Go to Settings > AI Providers.")
-        return GeminiProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gemini-2.5-flash")
-    
+        provider = GeminiProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gemini-2.5-flash")
     elif name == "anthropic":
         cfg = settings.anthropic
         if not cfg.api_key:
             raise ValueError("Anthropic API key not configured. Go to Settings > AI Providers.")
-        return AnthropicProvider(api_key=cfg.api_key, default_model=cfg.default_model or "claude-sonnet-4-20250514")
-    
+        provider = AnthropicProvider(api_key=cfg.api_key, default_model=cfg.default_model or "claude-sonnet-4-20250514")
     elif name == "openrouter":
         cfg = settings.openrouter
         if not cfg.api_key:
             raise ValueError("OpenRouter API key not configured. Go to Settings > AI Providers.")
-        return OpenRouterProvider(
+        provider = OpenRouterProvider(
             api_key=cfg.api_key,
             base_url=cfg.base_url or "https://openrouter.ai/api/v1",
             default_model=cfg.default_model or "meta-llama/llama-3.3-70b-instruct",
         )
-    
     else:
         raise ValueError(f"Unknown provider: {name}")
+    
+    _provider_cache[cache_key] = provider
+    return provider
+
+
+def clear_provider_cache():
+    """Clear the provider cache. Call after settings changes."""
+    _provider_cache.clear()
 
 
 def resolve_prompt(
@@ -119,11 +130,11 @@ def resolve_prompt(
     
     resolved_lang = lang_map.get(target_lang or settings.language, target_lang or settings.language)
     
-    return prompt_obj.prompt_template.format(
-        content=content,
-        target_lang=resolved_lang,
-        user_prompt=user_prompt or "",
-    )
+    template = prompt_obj.prompt_template
+    template = template.replace("{content}", content)
+    template = template.replace("{target_lang}", resolved_lang)
+    template = template.replace("{user_prompt}", user_prompt or "")
+    return template
 
 
 async def execute_action(

@@ -131,12 +131,3 @@ async function getProviders() {
   if (!res.ok) throw new Error(`Providers fetch failed: ${res.status}`);
   return res.json();
 }
-
-/**
- * Get models for a specific provider.
- */
-async function getModels(providerName) {
-  const res = await fetch(`${BACKEND_URL}/api/ai/models/${providerName}`);
-  if (!res.ok) throw new Error(`Models fetch failed: ${res.status}`);
-  return res.json();
-}

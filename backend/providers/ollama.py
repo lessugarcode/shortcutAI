@@ -4,6 +4,7 @@ Local AI model support via Ollama API.
 """
 
 import httpx
+import json
 from typing import AsyncGenerator, Optional
 
 from .base import BaseProvider, AIMessage, AIResponse
@@ -56,7 +57,6 @@ class OllamaProvider(BaseProvider):
             response.raise_for_status()
             async for line in response.aiter_lines():
                 if line:
-                    import json
                     data = json.loads(line)
                     if "message" in data and "content" in data["message"]:
                         chunk = data["message"]["content"]

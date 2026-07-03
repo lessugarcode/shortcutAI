@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from services.actions import execute_action, execute_action_stream, get_provider
-from services.context_detector import detect_content_type, get_available_actions
+from services.context_detector import detect_content_type
 from config import config_manager
 
 logger = logging.getLogger(__name__)
@@ -144,18 +144,18 @@ async def list_providers() -> list[ProviderStatus]:
     results = []
     
     provider_configs = [
-        ("ollama", settings.ollama.enabled, None),
-        ("openai", settings.openai.enabled, settings.openai.api_key),
-        ("gemini", settings.gemini.enabled, settings.gemini.api_key),
-        ("anthropic", settings.anthropic.enabled, settings.anthropic.api_key),
-        ("openrouter", settings.openrouter.enabled, settings.openrouter.api_key),
+        ("ollama", settings.ollama.enabled),
+        ("openai", settings.openai.enabled),
+        ("gemini", settings.gemini.enabled),
+        ("anthropic", settings.anthropic.enabled),
+        ("openrouter", settings.openrouter.enabled),
     ]
     
-    for name, enabled, api_key in provider_configs:
+    for name, enabled in provider_configs:
         healthy = False
         models = []
         
-        if enabled or (name == "ollama"):
+        if enabled:
             try:
                 provider = get_provider(name)
                 healthy = await provider.health_check()
@@ -168,19 +168,7 @@ async def list_providers() -> list[ProviderStatus]:
             name=name,
             enabled=enabled if name != "ollama" else settings.ollama.enabled,
             healthy=healthy,
-            models=models[:20],  # Limit model list
+            models=models[:20],
         ))
     
     return results
-
-
-@router.get("/models/{provider_name}")
-async def list_models(provider_name: str) -> list[str]:
-    """List available models for a provider."""
-    try:
-        provider = get_provider(provider_name)
-        return await provider.list_models()
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

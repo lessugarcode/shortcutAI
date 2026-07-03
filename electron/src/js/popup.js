@@ -89,6 +89,7 @@ async function processClipboard(data) {
     askAiContainer.style.display = 'block';
   } catch (err) {
     console.error('Detection failed:', err);
+    showPopupError('Backend tidak tersedia. Pastikan aplikasi berjalan.');
     // Fallback: show default actions
     renderActions([
       { id: 'translate', name: 'Terjemahkan', icon: '🌐', description: 'Terjemahkan teks' },
@@ -187,4 +188,15 @@ function sendAskAI() {
   };
 
   window.rightClickAI.executeAction(actionData);
+}
+
+function showPopupError(message) {
+  const actionList = document.getElementById('actionList');
+  actionList.innerHTML = `
+    <div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">
+      <div style="font-size:2rem;margin-bottom:var(--space-sm)">⚠️</div>
+      <div>${message}</div>
+      <button class="btn btn-ghost" style="margin-top:var(--space-md)"
+              onclick="window.rightClickAI.openSettings()">⚙️ Buka Settings</button>
+    </div>`;
 }

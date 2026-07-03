@@ -141,35 +141,52 @@ async function saveAndUseProvider(providerName) {
     if (providerName === 'openai') {
       const key = document.getElementById('openai-key').value;
       const model = document.getElementById('openai-model').value;
-      if (!key || key.includes('...')) {
+      if (!key) {
         showToast('Masukkan API key yang valid', 'error');
         return;
       }
-      updates.openai = { api_key: key, default_model: model, enabled: true };
+      if (isKeyMasked(key, currentSettings.openai?.api_key)) {
+        delete updates.openai?.api_key;
+        updates.openai = { default_model: model, enabled: true };
+      } else {
+        updates.openai = { api_key: key, default_model: model, enabled: true };
+      }
     } else if (providerName === 'gemini') {
       const key = document.getElementById('gemini-key').value;
       const model = document.getElementById('gemini-model').value;
-      if (!key || key.includes('...')) {
+      if (!key) {
         showToast('Masukkan API key yang valid', 'error');
         return;
       }
-      updates.gemini = { api_key: key, default_model: model, enabled: true };
+      if (isKeyMasked(key, currentSettings.gemini?.api_key)) {
+        updates.gemini = { default_model: model, enabled: true };
+      } else {
+        updates.gemini = { api_key: key, default_model: model, enabled: true };
+      }
     } else if (providerName === 'anthropic') {
       const key = document.getElementById('anthropic-key').value;
       const model = document.getElementById('anthropic-model').value;
-      if (!key || key.includes('...')) {
+      if (!key) {
         showToast('Masukkan API key yang valid', 'error');
         return;
       }
-      updates.anthropic = { api_key: key, default_model: model, enabled: true };
+      if (isKeyMasked(key, currentSettings.anthropic?.api_key)) {
+        updates.anthropic = { default_model: model, enabled: true };
+      } else {
+        updates.anthropic = { api_key: key, default_model: model, enabled: true };
+      }
     } else if (providerName === 'openrouter') {
       const key = document.getElementById('openrouter-key').value;
       const model = document.getElementById('openrouter-model').value;
-      if (!key || key.includes('...')) {
+      if (!key) {
         showToast('Masukkan API key yang valid', 'error');
         return;
       }
-      updates.openrouter = { api_key: key, default_model: model, enabled: true };
+      if (isKeyMasked(key, currentSettings.openrouter?.api_key)) {
+        updates.openrouter = { default_model: model, enabled: true };
+      } else {
+        updates.openrouter = { api_key: key, default_model: model, enabled: true };
+      }
     }
 
     updates.active_provider = providerName;
@@ -177,11 +194,15 @@ async function saveAndUseProvider(providerName) {
     updateActiveProviderUI(providerName);
     showToast(`${providerName} tersimpan dan aktif ✓`);
 
-    // Re-check status
     checkProviderStatus();
   } catch (err) {
     showToast('Gagal menyimpan: ' + err.message, 'error');
   }
+}
+
+function isKeyMasked(inputValue, maskedValue) {
+  if (!inputValue || !maskedValue) return false;
+  return inputValue === maskedValue;
 }
 
 // --- Check Provider Status ---
@@ -239,7 +260,7 @@ function renderPrompts(prompts) {
       <div class="prompt-item-icon">${prompt.icon}</div>
       <div class="prompt-item-info">
         <div class="prompt-item-name">${prompt.name}</div>
-        <div class="prompt-item-desc">${prompt.description || prompt.prompt_template.substring(0, 60) + '...'}</div>
+        <div class="prompt-item-desc">${prompt.description || (prompt.prompt_template.length > 60 ? prompt.prompt_template.substring(0, 60) + '...' : prompt.prompt_template)}</div>
       </div>
       <div class="prompt-item-types">
         ${prompt.content_types.map(t =>

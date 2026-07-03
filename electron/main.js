@@ -27,6 +27,7 @@ let resultWindow = null;
 let settingsWindow = null;
 let backendProcess = null;
 let isQuitting = false;
+let isSpawningBackend = false;
 
 const BACKEND_URL = 'http://127.0.0.1:8765';
 const DEFAULT_HOTKEY = 'CommandOrControl+Shift+Q';
@@ -60,7 +61,8 @@ app.whenReady().then(async () => {
   setupIPC();
   
   // Show settings on first launch so user can configure API keys
-  createSettingsWindow();
+  const showOnStart = require('electron').app.isPackaged ? false : true;
+  if (showOnStart) createSettingsWindow();
 });
 
 app.on('will-quit', () => {
@@ -76,7 +78,7 @@ app.on('window-all-closed', (e) => {
 
 // --- Backend Management ---
 function startBackend() {
-  // Check if backend is already running (e.g., started by start.bat)
+  if (isSpawningBackend) return;
   const http = require('http');
   const checkReq = http.get(`${BACKEND_URL}/health`, (res) => {
     if (res.statusCode === 200) {
@@ -85,16 +87,31 @@ function startBackend() {
     }
   });
   checkReq.on('error', () => {
-    // Not running, start it ourselves
-    spawnBackend();
+    if (!isSpawningBackend) {
+      isSpawningBackend = true;
+      spawnBackend();
+    }
+  });
+  checkReq.on('response', (res) => {
+    if (res.statusCode !== 200) {
+      checkReq.destroy();
+      if (!isSpawningBackend) {
+        isSpawningBackend = true;
+        spawnBackend();
+      }
+    }
   });
   checkReq.setTimeout(1000, () => {
     checkReq.destroy();
-    spawnBackend();
+    if (!isSpawningBackend) {
+      isSpawningBackend = true;
+      spawnBackend();
+    }
   });
 }
 
 function spawnBackend() {
+  isSpawningBackend = true;
   const backendDir = path.join(__dirname, '..', 'backend');
   const pythonExe = process.platform === 'win32' 
     ? path.join(backendDir, 'venv', 'Scripts', 'python.exe')
@@ -118,6 +135,7 @@ function spawnBackend() {
 
   backendProcess.on('close', (code) => {
     console.log(`[Backend] Process exited with code ${code}`);
+    isSpawningBackend = false;
     if (!isQuitting && code !== 0) {
       console.log('[Backend] Restarting in 3s...');
       setTimeout(startBackend, 3000);
@@ -158,7 +176,6 @@ async function waitForBackend(timeoutMs = 15000) {
 
 // --- Tray ---
 function createTray() {
-  // Create a simple tray icon
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
   let trayIcon;
 
@@ -166,7 +183,6 @@ function createTray() {
     trayIcon = nativeImage.createFromPath(iconPath);
     trayIcon = trayIcon.resize({ width: 16, height: 16 });
   } catch {
-    // Fallback: create a simple colored icon
     trayIcon = createDefaultIcon();
   }
 
@@ -205,18 +221,6 @@ function createTray() {
   tray.on('double-click', () => {
     createSettingsWindow();
   });
-}
-
-function createDefaultIcon() {
-  // Create a 16x16 purple icon as fallback
-  const canvas = Buffer.alloc(16 * 16 * 4);
-  for (let i = 0; i < 16 * 16; i++) {
-    canvas[i * 4] = 139;     // R
-    canvas[i * 4 + 1] = 92;  // G
-    canvas[i * 4 + 2] = 246; // B
-    canvas[i * 4 + 3] = 255; // A
-  }
-  return nativeImage.createFromBuffer(canvas, { width: 16, height: 16 });
 }
 
 // --- Global Hotkey ---
@@ -266,14 +270,18 @@ async function onHotkeyPressed() {
 
   // Get cursor position
   const cursorPoint = screen.getCursorScreenPoint();
-  const display = screen.getDisplayNearestPoint(cursorPoint);
+  openPopup(text, hasImage, imageBase64, imageMimeType, cursorPoint.x, cursorPoint.y);
+}
+
+function openPopup(text, hasImage, imageBase64, imageMimeType, cursorX, cursorY) {
+  const display = screen.getDisplayNearestPoint({ x: cursorX, y: cursorY });
 
   // Calculate popup position (near cursor, but within screen bounds)
   const popupWidth = 320;
   const popupHeight = 420;
 
-  let x = cursorPoint.x - 10;
-  let y = cursorPoint.y + 10;
+  let x = cursorX - 10;
+  let y = cursorY + 10;
 
   // Keep within screen bounds
   const bounds = display.workArea;
@@ -281,7 +289,7 @@ async function onHotkeyPressed() {
     x = bounds.x + bounds.width - popupWidth - 10;
   }
   if (y + popupHeight > bounds.y + bounds.height) {
-    y = cursorPoint.y - popupHeight - 10;
+    y = cursorY - popupHeight - 10;
   }
   if (x < bounds.x) x = bounds.x + 10;
   if (y < bounds.y) y = bounds.y + 10;

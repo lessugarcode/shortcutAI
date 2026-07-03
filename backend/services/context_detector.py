@@ -72,12 +72,4 @@ def detect_content_type(content: str, has_image: bool = False) -> ContentType:
     return "text"
 
 
-def get_available_actions(content_type: ContentType) -> list[str]:
-    """Get list of action IDs available for a given content type."""
-    from config import config_manager
-    
-    actions = []
-    for prompt in config_manager.custom_prompts:
-        if content_type in prompt.content_types:
-            actions.append(prompt.id)
-    return actions
+

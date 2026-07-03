@@ -5,9 +5,13 @@ Handles loading/saving settings, API keys, and custom prompts.
 
 import json
 import os
+import logging
 from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
+from utils.security import encrypt_api_key, decrypt_api_key
+
+logger = logging.getLogger(__name__)
 
 
 # --- Paths ---
@@ -97,15 +101,27 @@ class ConfigManager:
         if CONFIG_FILE.exists():
             try:
                 data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+                # Decrypt API keys on load; plaintext keys survive migration
+                for provider in ["openai", "gemini", "anthropic", "openrouter"]:
+                    if data.get(provider, {}).get("api_key"):
+                        try:
+                            data[provider]["api_key"] = decrypt_api_key(data[provider]["api_key"])
+                        except Exception:
+                            pass  # Already plaintext, will be encrypted on next save
                 return AppSettings(**data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load settings: {e}")
         return AppSettings()
     
     def save_settings(self, settings: AppSettings) -> None:
         self._settings = settings
+        data = settings.model_dump()
+        # Encrypt API keys before saving
+        for provider in ["openai", "gemini", "anthropic", "openrouter"]:
+            if data.get(provider, {}).get("api_key"):
+                data[provider]["api_key"] = encrypt_api_key(data[provider]["api_key"])
         CONFIG_FILE.write_text(
-            settings.model_dump_json(indent=2),
+            json.dumps(data, indent=2),
             encoding="utf-8"
         )
     
@@ -128,8 +144,8 @@ class ConfigManager:
             try:
                 data = json.loads(CUSTOM_PROMPTS_FILE.read_text(encoding="utf-8"))
                 return [CustomPrompt(**p) for p in data]
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load custom prompts: {e}")
         return self._default_custom_prompts()
     
     def save_custom_prompts(self, prompts: list[CustomPrompt]) -> None:

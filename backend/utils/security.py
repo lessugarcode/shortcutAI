@@ -8,10 +8,13 @@ import base64
 from pathlib import Path
 from cryptography.fernet import Fernet
 
-from config import APP_DATA_DIR
+_APP_DATA_DIR = Path(os.environ.get(
+    "RIGHTCLICK_AI_DATA",
+    Path.home() / ".rightclick-ai"
+))
+_APP_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-
-KEY_FILE = APP_DATA_DIR / ".encryption_key"
+KEY_FILE = _APP_DATA_DIR / ".encryption_key"
 
 
 def _get_or_create_key() -> bytes:

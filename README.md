@@ -40,15 +40,12 @@
 ### Instalasi
 
 ```bash
-# Clone repository
-git clone https://github.com/your-username/rightclick-ai.git
+git clone https://github.com/USERNAME/rightclick-ai.git
 cd rightclick-ai
-
-# Jalankan (auto-setup pada pertama kali)
 start.bat
 ```
 
-Script `start.bat` akan secara otomatis:
+`start.bat` akan otomatis:
 1. Membuat Python virtual environment
 2. Menginstall semua dependencies
 3. Menjalankan backend API server
@@ -61,6 +58,13 @@ Script `start.bat` akan secara otomatis:
 3. **Tekan** `Ctrl+Shift+Q`
 4. **Pilih aksi** dari menu popup yang muncul
 5. **Lihat hasilnya** di widget mengambang
+
+### Konfigurasi API Key
+
+Buka **Settings** (klik kanan tray icon → ⚙️ Settings, atau window muncul di first launch).
+Isi API key di tab **Providers** untuk provider yang ingin dipakai.
+
+Data disimpan terenkripsi di `~\.rightclick-ai\config.json`.
 
 ## 📦 Tech Stack
 

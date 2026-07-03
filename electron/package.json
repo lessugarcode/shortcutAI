@@ -10,9 +10,7 @@
   "keywords": ["ai", "context-menu", "productivity", "windows"],
   "author": "Right Click AI",
   "license": "MIT",
-  "dependencies": {
-    "electron-store": "^10.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "electron": "^35.1.5"
   }

@@ -3,6 +3,7 @@ Right Click AI — Google Gemini Provider
 BYOK support for Google Gemini API.
 """
 
+import base64
 from typing import AsyncGenerator, Optional
 from google import genai
 from google.genai import types
@@ -97,7 +98,6 @@ class GeminiProvider(BaseProvider):
         for msg in messages:
             parts = [msg.content]
             if msg.image_base64:
-                import base64
                 image_bytes = base64.b64decode(msg.image_base64)
                 parts.append(types.Part.from_bytes(
                     data=image_bytes,

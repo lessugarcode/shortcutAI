@@ -26,3 +26,6 @@ out/
 
 # Logs
 *.log
+
+# Graph analysis
+graphify-out/
