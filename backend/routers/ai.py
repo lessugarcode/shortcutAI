@@ -101,7 +101,14 @@ async def run_action(req: ActionRequest):
                     yield f"data: {json.dumps({'done': True})}\n\n"
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
-                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    msg = str(e)
+                    if "API key not configured" in msg or "disabled" in msg.lower():
+                        hint = "\n\n💡 Buka Settings (klik kanan icon tray → Settings) untuk konfigurasi provider."
+                        msg += hint
+                    elif "503" in msg or "429" in msg or "unavailable" in msg.lower() or "overloaded" in msg.lower():
+                        hint = "\n\n💡 Provider sedang sibuk. Coba lagi sebentar, atau ganti ke provider lain di Settings."
+                        msg += hint
+                    yield f"data: {json.dumps({'error': msg})}\n\n"
             
             return StreamingResponse(
                 event_generator(),

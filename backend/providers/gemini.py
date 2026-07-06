@@ -3,12 +3,39 @@ Right Click AI — Google Gemini Provider
 BYOK support for Google Gemini API.
 """
 
+import asyncio
 import base64
 from typing import AsyncGenerator, Optional
 from google import genai
 from google.genai import types
 
 from .base import BaseProvider, AIMessage, AIResponse
+
+
+RETRYABLE_CODES = {429, 500, 502, 503, 504}
+
+
+def _is_retryable(error: Exception) -> bool:
+    code = getattr(error, 'code', None) or getattr(error, 'status_code', None)
+    if code in RETRYABLE_CODES:
+        return True
+    msg = str(error).lower()
+    return any(k in msg for k in ('unavailable', 'overloaded', 'rate', 'timeout', 'capacity'))
+
+
+async def _retry_with_backoff(fn, max_retries: int = 2):
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            return await fn()
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries and _is_retryable(e):
+                delay = (attempt + 1) * 2
+                await asyncio.sleep(delay)
+                continue
+            raise
+    raise last_error  # type: ignore
 
 
 class GeminiProvider(BaseProvider):
@@ -33,13 +60,15 @@ class GeminiProvider(BaseProvider):
         model = model or self.default_model
         contents = self._format_messages(messages)
         
-        response = await self.client.aio.models.generate_content(
-            model=model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            ),
+        response = await _retry_with_backoff(
+            lambda: self.client.aio.models.generate_content(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                ),
+            )
         )
         
         return AIResponse(
@@ -62,13 +91,15 @@ class GeminiProvider(BaseProvider):
         model = model or self.default_model
         contents = self._format_messages(messages)
         
-        response_stream = await self.client.aio.models.generate_content_stream(
-            model=model,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            ),
+        response_stream = await _retry_with_backoff(
+            lambda: self.client.aio.models.generate_content_stream(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                ),
+            )
         )
         
         async for chunk in response_stream:
