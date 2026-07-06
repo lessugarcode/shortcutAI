@@ -24,13 +24,14 @@ const LANGUAGES = [
 ];
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', async () => {
-  await initAPI();
-
+document.addEventListener('DOMContentLoaded', () => {
+  // Register IPC listener BEFORE any async ops (prevents race condition)
   window.rightClickAI.onClipboardData(async (data) => {
     clipboardData = data;
     await processClipboard(data);
   });
+
+  initAPI();
 
   // Ask AI input
   document.getElementById('askAiInput').addEventListener('keydown', (e) => {

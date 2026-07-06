@@ -20,12 +20,13 @@ const ACTION_META = {
 };
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', async () => {
-  await initAPI();
-
+document.addEventListener('DOMContentLoaded', () => {
+  // Register IPC listener BEFORE any async ops (prevents race condition)
   window.rightClickAI.onActionData((data) => {
     startStreaming(data);
   });
+
+  initAPI();
 
   // Controls
   document.getElementById('closeBtn').addEventListener('click', () => {

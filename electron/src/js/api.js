@@ -36,6 +36,9 @@ async function detectContent(content, hasImage = false) {
 function executeActionStream(params, onChunk, onDone, onError) {
   const controller = new AbortController();
 
+  // 3-minute timeout
+  const timeoutId = setTimeout(() => controller.abort(), 180000);
+
   fetch(`${BACKEND_URL}/api/ai/action`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -76,7 +79,7 @@ function executeActionStream(params, onChunk, onDone, onError) {
                 return;
               }
             } catch (e) {
-              // Skip malformed JSON
+              console.warn('SSE parse error:', line.substring(0, 100), e.message);
             }
           }
         }
@@ -87,6 +90,9 @@ function executeActionStream(params, onChunk, onDone, onError) {
       if (err.name !== 'AbortError') {
         onError?.(err);
       }
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
     });
 
   return controller;

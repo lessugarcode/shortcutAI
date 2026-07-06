@@ -62,7 +62,7 @@ class AppSettings(BaseModel):
     ))
     
     # Active provider
-    active_provider: str = "openrouter"
+    active_provider: str = "ollama"
     
     # Streaming
     stream_responses: bool = True

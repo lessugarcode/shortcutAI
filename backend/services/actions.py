@@ -46,21 +46,29 @@ def get_provider(provider_name: Optional[str] = None) -> BaseProvider:
         provider = OllamaProvider(base_url=settings.ollama.base_url)
     elif name == "openai":
         cfg = settings.openai
+        if not cfg.enabled:
+            raise ValueError("OpenAI is disabled. Enable it in Settings > AI Providers.")
         if not cfg.api_key:
             raise ValueError("OpenAI API key not configured. Go to Settings > AI Providers.")
         provider = OpenAIProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gpt-4o-mini")
     elif name == "gemini":
         cfg = settings.gemini
+        if not cfg.enabled:
+            raise ValueError("Gemini is disabled. Enable it in Settings > AI Providers.")
         if not cfg.api_key:
             raise ValueError("Gemini API key not configured. Go to Settings > AI Providers.")
         provider = GeminiProvider(api_key=cfg.api_key, default_model=cfg.default_model or "gemini-2.5-flash")
     elif name == "anthropic":
         cfg = settings.anthropic
+        if not cfg.enabled:
+            raise ValueError("Anthropic is disabled. Enable it in Settings > AI Providers.")
         if not cfg.api_key:
             raise ValueError("Anthropic API key not configured. Go to Settings > AI Providers.")
         provider = AnthropicProvider(api_key=cfg.api_key, default_model=cfg.default_model or "claude-sonnet-4-20250514")
     elif name == "openrouter":
         cfg = settings.openrouter
+        if not cfg.enabled:
+            raise ValueError("OpenRouter is disabled. Enable it in Settings > AI Providers.")
         if not cfg.api_key:
             raise ValueError("OpenRouter API key not configured. Go to Settings > AI Providers.")
         provider = OpenRouterProvider(

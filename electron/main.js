@@ -60,9 +60,11 @@ app.whenReady().then(async () => {
   // IPC handlers
   setupIPC();
   
-  // Show settings on first launch so user can configure API keys
-  const showOnStart = require('electron').app.isPackaged ? false : true;
-  if (showOnStart) createSettingsWindow();
+  // Show settings on first launch (when no config file exists yet)
+  const fs = require('fs');
+  const os = require('os');
+  const configPath = path.join(os.homedir(), '.rightclick-ai', 'config.json');
+  if (!fs.existsSync(configPath)) createSettingsWindow();
 });
 
 app.on('will-quit', () => {
