@@ -26,7 +26,7 @@ class OllamaProvider(BaseProvider):
         messages: list[AIMessage],
         model: Optional[str] = "llama3.2",
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AIResponse:
         payload = self._build_payload(messages, model, temperature, max_tokens, stream=False)
         
@@ -49,7 +49,7 @@ class OllamaProvider(BaseProvider):
         messages: list[AIMessage],
         model: Optional[str] = "llama3.2",
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AsyncGenerator[str, None]:
         payload = self._build_payload(messages, model, temperature, max_tokens, stream=True)
         

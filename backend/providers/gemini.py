@@ -55,7 +55,7 @@ class GeminiProvider(BaseProvider):
         messages: list[AIMessage],
         model: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AIResponse:
         model = model or self.default_model
         contents = self._format_messages(messages)
@@ -86,7 +86,7 @@ class GeminiProvider(BaseProvider):
         messages: list[AIMessage],
         model: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AsyncGenerator[str, None]:
         model = model or self.default_model
         contents = self._format_messages(messages)

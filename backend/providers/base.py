@@ -35,7 +35,7 @@ class BaseProvider(ABC):
         messages: list[AIMessage],
         model: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AIResponse:
         """Generate a response from the AI model."""
         ...
@@ -46,7 +46,7 @@ class BaseProvider(ABC):
         messages: list[AIMessage],
         model: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 2048,
+        max_tokens: int = 8192,
     ) -> AsyncGenerator[str, None]:
         """Stream a response from the AI model, yielding text chunks."""
         ...
