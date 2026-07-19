@@ -146,7 +146,6 @@ async function saveAndUseProvider(providerName) {
         return;
       }
       if (isKeyMasked(key, currentSettings.openai?.api_key)) {
-        delete updates.openai?.api_key;
         updates.openai = { default_model: model, enabled: true };
       } else {
         updates.openai = { api_key: key, default_model: model, enabled: true };

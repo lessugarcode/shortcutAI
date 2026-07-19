@@ -75,7 +75,7 @@ app.on('will-quit', () => {
 
 app.on('window-all-closed', (e) => {
   // Don't quit when all windows are closed — we live in the tray
-  e.preventDefault?.();
+  e.preventDefault();
 });
 
 // --- Backend Management ---
@@ -177,6 +177,25 @@ async function waitForBackend(timeoutMs = 15000) {
 }
 
 // --- Tray ---
+function createDefaultIcon() {
+  // Create a 16x16 fallback icon programmatically
+  const size = 16;
+  const canvas = Buffer.alloc(size * size * 4);
+  // Draw a simple purple square with "AI" text approximation
+  for (let i = 0; i < size * size; i++) {
+    const x = i % size;
+    const y = Math.floor(i / size);
+    // Purple gradient-ish background
+    const dist = Math.sqrt((x - 8) ** 2 + (y - 8) ** 2);
+    const alpha = dist < 7 ? 255 : 0;
+    canvas[i * 4] = 139;     // R
+    canvas[i * 4 + 1] = 92;  // G
+    canvas[i * 4 + 2] = 246; // B
+    canvas[i * 4 + 3] = alpha;
+  }
+  return nativeImage.createFromBuffer(canvas, { width: size, height: size });
+}
+
 function createTray() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png');
   let trayIcon;

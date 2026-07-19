@@ -109,7 +109,8 @@ class GeminiProvider(BaseProvider):
     async def list_models(self) -> list[str]:
         try:
             models = []
-            async for model in self.client.aio.models.list():
+            response = await self.client.aio.models.list()
+            async for model in response:
                 if "gemini" in model.name.lower():
                     models.append(model.name.replace("models/", ""))
             return sorted(models)
@@ -118,7 +119,8 @@ class GeminiProvider(BaseProvider):
     
     async def health_check(self) -> bool:
         try:
-            async for _ in self.client.aio.models.list():
+            response = await self.client.aio.models.list()
+            async for _ in response:
                 return True
             return True
         except Exception:
@@ -127,7 +129,9 @@ class GeminiProvider(BaseProvider):
     def _format_messages(self, messages: list[AIMessage]) -> list:
         contents = []
         for msg in messages:
-            parts = [msg.content]
+            parts = []
+            if msg.content:
+                parts.append(msg.content)
             if msg.image_base64:
                 image_bytes = base64.b64decode(msg.image_base64)
                 parts.append(types.Part.from_bytes(
