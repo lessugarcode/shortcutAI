@@ -160,3 +160,38 @@ async function getProviders() {
   if (!res.ok) throw new Error(`Providers fetch failed: ${res.status}`);
   return res.json();
 }
+
+/**
+ * Get interaction history.
+ */
+async function getHistory(limit = 50, offset = 0) {
+  const res = await fetch(
+    `${BACKEND_URL}/api/ai/history?limit=${limit}&offset=${offset}`,
+    { headers: apiHeaders() }
+  );
+  if (!res.ok) throw new Error(`History fetch failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Delete a single history item.
+ */
+async function deleteHistoryItem(id) {
+  const res = await fetch(`${BACKEND_URL}/api/ai/history/${id}`, {
+    method: 'DELETE',
+    headers: apiHeaders(),
+  });
+  if (!res.ok) throw new Error(`History delete failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Get a single history item with full response.
+ */
+async function getHistoryItem(id) {
+  const res = await fetch(`${BACKEND_URL}/api/ai/history/${id}`, {
+    headers: apiHeaders(),
+  });
+  if (!res.ok) throw new Error(`History item fetch failed: ${res.status}`);
+  return res.json();
+}

@@ -1,9 +1,21 @@
 /**
  * Right Click AI — Settings Logic
- * Manages settings UI, provider configuration, and custom prompts.
+ * Manages settings UI, provider configuration, custom prompts, and history.
  */
 
 let currentSettings = {};
+
+const ACTION_META = {
+  translate: { icon: '\u{1F310}', name: 'Translate' },
+  explain: { icon: '\u{1F4D6}', name: 'Explain' },
+  summarize: { icon: '\u{1F4DD}', name: 'Summarize' },
+  fix_writing: { icon: '\u270D\uFE0F', name: 'Fix Writing' },
+  explain_code: { icon: '\u{1F41B}', name: 'Explain Code' },
+  review_code: { icon: '\u{1F50D}', name: 'Review Code' },
+  describe_image: { icon: '\u{1F5BC}\uFE0F', name: 'Describe Image' },
+  ocr: { icon: '\u{1F4C4}', name: 'Extract Text' },
+  ask_ai: { icon: '\u{1F4AC}', name: 'Ask AI' },
+};
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,6 +38,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     item.addEventListener('click', () => {
       const section = item.dataset.section;
       switchSection(section);
+      if (section === 'history') {
+        loadHistory();
+      }
     });
   });
 
@@ -47,12 +62,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // General settings change handlers
   document.getElementById('languageSelect').addEventListener('change', async (e) => {
     await updateSettings({ language: e.target.value });
-    showToast('Bahasa default diperbarui ✓');
+    showToast('Bahasa default diperbarui');
   });
 
   document.getElementById('streamToggle').addEventListener('change', async (e) => {
     await updateSettings({ stream_responses: e.target.checked });
-    showToast('Streaming ' + (e.target.checked ? 'diaktifkan' : 'dinonaktifkan') + ' ✓');
+    showToast('Streaming ' + (e.target.checked ? 'diaktifkan' : 'dinonaktifkan'));
   });
 
   // Hotkey input
@@ -127,7 +142,7 @@ async function setActiveProvider(providerName) {
   try {
     await updateSettings({ active_provider: providerName });
     updateActiveProviderUI(providerName);
-    showToast(`Provider aktif: ${providerName} ✓`);
+    showToast(`Provider aktif: ${providerName}`);
   } catch (err) {
     showToast('Gagal mengubah provider', 'error');
   }
@@ -191,7 +206,7 @@ async function saveAndUseProvider(providerName) {
     updates.active_provider = providerName;
     await updateSettings(updates);
     updateActiveProviderUI(providerName);
-    showToast(`${providerName} tersimpan dan aktif ✓`);
+    showToast(`${providerName} tersimpan dan aktif`);
 
     checkProviderStatus();
   } catch (err) {
@@ -215,7 +230,7 @@ async function checkProviderStatus() {
 
       if (p.healthy) {
         badge.className = 'badge badge-success';
-        badge.textContent = `✓ Online (${p.models.length} models)`;
+        badge.textContent = `Online (${p.models.length} models)`;
 
         // Update model select for Ollama
         if (p.name === 'ollama' && p.models.length > 0) {
@@ -226,10 +241,10 @@ async function checkProviderStatus() {
         }
       } else if (p.enabled || p.name === 'ollama') {
         badge.className = 'badge badge-error';
-        badge.textContent = '✕ Offline';
+        badge.textContent = 'Offline';
       } else {
         badge.className = 'badge';
-        badge.textContent = '— Tidak dikonfigurasi';
+        badge.textContent = 'Tidak dikonfigurasi';
         badge.style.color = 'var(--text-tertiary)';
       }
     });
@@ -269,6 +284,117 @@ function renderPrompts(prompts) {
     `;
     list.appendChild(item);
   });
+}
+
+// --- History ---
+async function loadHistory() {
+  const historyList = document.getElementById('historyList');
+  if (!historyList) return;
+
+  historyList.innerHTML = '<div class="history-loading">Loading history...</div>';
+
+  try {
+    const result = await getHistory(50, 0);
+    const items = result.items || [];
+
+    if (items.length === 0) {
+      historyList.innerHTML = '<div class="history-empty">No interactions yet. Use the hotkey to trigger AI actions.</div>';
+      return;
+    }
+
+    historyList.innerHTML = '';
+    items.forEach(item => {
+      const meta = ACTION_META[item.action_id] || { icon: '\u26A1', name: item.action_id };
+      const preview = (item.content_preview || '').substring(0, 80);
+      const date = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+
+      const row = document.createElement('div');
+      row.className = 'history-item';
+      row.innerHTML = `
+        <div class="history-item-icon">${meta.icon}</div>
+        <div class="history-item-info">
+          <div class="history-item-name">${meta.name}</div>
+          <div class="history-item-preview">${escapeHtml(preview)}</div>
+          <div class="history-item-meta">
+            <span>${date}</span>
+            <span class="badge" style="background:var(--bg-tertiary);color:var(--text-tertiary);font-size:9px;">${escapeHtml(item.provider || 'unknown')}</span>
+          </div>
+        </div>
+        <div class="history-item-actions">
+          <button class="btn-icon history-view-btn" data-id="${item.id}" title="View full response">\u{1F50D}</button>
+          <button class="btn-icon history-delete-btn" data-id="${item.id}" title="Delete">\u{1F5D1}</button>
+        </div>
+      `;
+
+      historyList.appendChild(row);
+    });
+
+    // Bind click events
+    historyList.querySelectorAll('.history-view-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        await viewHistoryItem(parseInt(id));
+      });
+    });
+
+    historyList.querySelectorAll('.history-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        await deleteHistoryItem(parseInt(id));
+        loadHistory();
+      });
+    });
+
+    // Click on item to view
+    historyList.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        const btn = item.querySelector('.history-view-btn');
+        if (btn) await viewHistoryItem(parseInt(btn.dataset.id));
+      });
+    });
+
+  } catch (err) {
+    console.error('Failed to load history:', err);
+    historyList.innerHTML = '<div class="history-error">Failed to load history. Backend may be unavailable.</div>';
+  }
+}
+
+async function viewHistoryItem(id) {
+  try {
+    const item = await getHistoryItem(id);
+    const meta = ACTION_META[item.action_id] || { icon: '\u26A1', name: item.action_id };
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'history-modal-overlay';
+    modal.innerHTML = `
+      <div class="history-modal">
+        <div class="history-modal-header">
+          <span>${meta.icon} ${meta.name}</span>
+          <span class="badge" style="background:var(--bg-tertiary);color:var(--text-tertiary);font-size:10px;">${escapeHtml(item.provider || 'unknown')}</span>
+          <button class="btn-icon history-modal-close">\u2715</button>
+        </div>
+        <div class="history-modal-preview">
+          <strong>Input:</strong> ${escapeHtml(item.content_preview || '')}
+        </div>
+        <div class="history-modal-content">${escapeHtml(item.response || '')}</div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('.history-modal-close').addEventListener('click', () => {
+      modal.remove();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.remove();
+    });
+
+  } catch (err) {
+    showToast('Failed to load response', 'error');
+  }
 }
 
 // --- Hotkey Input ---
@@ -317,7 +443,7 @@ function setupHotkeyInput() {
       // Save
       await updateSettings({ hotkey });
       window.rightClickAI.updateHotkey(hotkey);
-      showToast(`Hotkey diperbarui: ${hotkey} ✓`);
+      showToast(`Hotkey diperbarui: ${hotkey}`);
     }
   });
 
@@ -340,6 +466,12 @@ function showToast(message, type = 'success') {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 3000);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // Expose for inline onclick handlers
