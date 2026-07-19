@@ -3,6 +3,7 @@ Right Click AI — AI Action Service
 Orchestrates AI actions: resolves prompts, selects providers, and executes.
 """
 
+import hashlib
 import logging
 from typing import AsyncGenerator, Optional
 
@@ -13,6 +14,7 @@ from providers.openai_provider import OpenAIProvider
 from providers.gemini import GeminiProvider
 from providers.anthropic_provider import AnthropicProvider
 from providers.openrouter import OpenRouterProvider
+from services.history import save_interaction
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,12 @@ def get_provider(provider_name: Optional[str] = None) -> BaseProvider:
     settings = config_manager.settings
     name = provider_name or settings.active_provider
     
-    cache_key = f"{name}_{settings.ollama.base_url if name == 'ollama' else getattr(getattr(settings, name, None), 'api_key', '')}"
+    if name == "ollama":
+        key_hash = settings.ollama.base_url
+    else:
+        api_key_part = getattr(getattr(settings, name, None), 'api_key', '') or ''
+        key_hash = hashlib.sha256(api_key_part.encode()).hexdigest()[:16]
+    cache_key = f"{name}_{key_hash}"
     
     if cache_key in _provider_cache:
         return _provider_cache[cache_key]
@@ -167,6 +174,19 @@ async def execute_action(
     )
     
     response = await provider.generate(messages=[message], model=model)
+    
+    # Auto-save interaction to history
+    try:
+        save_interaction(
+            action_id=action_id,
+            content_preview=content[:200] if content else "",
+            response=response.text,
+            provider=provider_name or config_manager.settings.active_provider,
+            model=model or getattr(provider, 'default_model', 'default'),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to save history: {e}")
+    
     return response.text
 
 
