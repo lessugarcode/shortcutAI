@@ -17,6 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import uvicorn
 
 from routers import ai, settings
+from services.rate_limiter import rate_limiter
 
 # --- Logging ---
 logging.basicConfig(
@@ -64,6 +65,23 @@ app.add_middleware(
 
 # Auth token middleware (must be added after CORS)
 app.add_middleware(AuthTokenMiddleware)
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Rate limiter middleware for /api/ai/action endpoint."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path == "/api/ai/action" and request.method == "POST":
+            client_ip = request.client.host if request.client else "127.0.0.1"
+            if not rate_limiter.allow(client_ip):
+                raise HTTPException(
+                    status_code=429,
+                    detail="Rate limit exceeded. Try again in a moment.",
+                )
+        return await call_next(request)
+
+
+app.add_middleware(RateLimitMiddleware)
 
 # --- Routers ---
 app.include_router(ai.router)

@@ -80,16 +80,8 @@ class AnthropicProvider(BaseProvider):
         ]
     
     async def health_check(self) -> bool:
-        try:
-            # Simple check with minimal tokens
-            await self.client.messages.create(
-                model=self.default_model,
-                messages=[{"role": "user", "content": "Hi"}],
-                max_tokens=5,
-            )
-            return True
-        except Exception:
-            return False
+        """Check if the provider is configured (no cost-incurring API call)."""
+        return bool(self.api_key)
     
     def _format_messages(self, messages: list[AIMessage]) -> list[dict]:
         formatted = []
