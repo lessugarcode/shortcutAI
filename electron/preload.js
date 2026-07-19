@@ -18,12 +18,17 @@ contextBridge.exposeInMainWorld('rightClickAI', {
 
   // Clipboard
   copyToClipboard: (text) => ipcRenderer.send('copy-to-clipboard', text),
+  pasteToActiveWindow: () => ipcRenderer.send('paste-to-active-window'),
 
   // AI actions
   executeAction: (actionData) => ipcRenderer.send('execute-action', actionData),
 
   // Settings
   updateHotkey: (hotkey) => ipcRenderer.send('update-hotkey', hotkey),
+  getAutoPaste: () => ipcRenderer.invoke('get-auto-paste'),
+
+  // File dialog
+  saveFileDialog: (opts) => ipcRenderer.invoke('save-file-dialog', opts),
 
   // Event listeners
   onClipboardData: (callback) => {

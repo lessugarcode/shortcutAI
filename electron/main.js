@@ -16,8 +16,10 @@ const {
   ipcMain,
   screen,
   shell,
+  dialog,
 } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 // --- State ---
@@ -29,6 +31,8 @@ let backendProcess = null;
 let isQuitting = false;
 let isSpawningBackend = false;
 let authToken = null;
+let previousFocusedWindow = null;
+let popupCloseTimeout = null;
 
 const BACKEND_URL = 'http://127.0.0.1:8765';
 const DEFAULT_HOTKEY = 'CommandOrControl+Shift+Q';
@@ -55,14 +59,13 @@ app.whenReady().then(async () => {
   // Create system tray
   createTray();
 
-  // Register global hotkey
-  registerHotkey(DEFAULT_HOTKEY);
+  // Load hotkey from settings, fallback to default
+  await loadHotkeyFromSettings();
 
   // IPC handlers
   setupIPC();
   
   // Show settings on first launch (when no config file exists yet)
-  const fs = require('fs');
   const os = require('os');
   const configPath = path.join(os.homedir(), '.rightclick-ai', 'config.json');
   if (!fs.existsSync(configPath)) createSettingsWindow();
@@ -70,6 +73,7 @@ app.whenReady().then(async () => {
 
 app.on('will-quit', () => {
   isQuitting = true;
+  if (popupCloseTimeout) clearTimeout(popupCloseTimeout);
   globalShortcut.unregisterAll();
   stopBackend();
 });
@@ -78,6 +82,29 @@ app.on('window-all-closed', (e) => {
   // Don't quit when all windows are closed — we live in the tray
   e.preventDefault();
 });
+
+// --- Hotkey from Settings ---
+async function loadHotkeyFromSettings() {
+  try {
+    const http = require('http');
+    const data = await new Promise((resolve, reject) => {
+      http.get(`${BACKEND_URL}/api/settings`, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try { resolve(JSON.parse(body)); }
+          catch (e) { reject(e); }
+        });
+      }).on('error', reject);
+    });
+    const hotkey = data.hotkey || DEFAULT_HOTKEY;
+    console.log(`[Hotkey] Loaded from settings: ${hotkey}`);
+    registerHotkey(hotkey);
+  } catch (err) {
+    console.warn(`[Hotkey] Could not load from settings (${err.message}), using default`);
+    registerHotkey(DEFAULT_HOTKEY);
+  }
+}
 
 // --- Backend Management ---
 function startBackend() {
@@ -189,11 +216,9 @@ function createDefaultIcon() {
   // Create a 16x16 fallback icon programmatically
   const size = 16;
   const canvas = Buffer.alloc(size * size * 4);
-  // Draw a simple purple square with "AI" text approximation
   for (let i = 0; i < size * size; i++) {
     const x = i % size;
     const y = Math.floor(i / size);
-    // Purple gradient-ish background
     const dist = Math.sqrt((x - 8) ** 2 + (y - 8) ** 2);
     const alpha = dist < 7 ? 255 : 0;
     canvas[i * 4] = 139;     // R
@@ -297,6 +322,9 @@ async function onHotkeyPressed() {
     return;
   }
 
+  // Track previously focused window for auto-paste
+  previousFocusedWindow = BrowserWindow.getFocusedWindow();
+
   // Get cursor position
   const cursorPoint = screen.getCursorScreenPoint();
   openPopup(text, hasImage, imageBase64, imageMimeType, cursorPoint.x, cursorPoint.y);
@@ -356,21 +384,44 @@ function openPopup(text, hasImage, imageBase64, imageMimeType, cursorX, cursorY)
     });
   });
 
-  // Close popup when it loses focus
+  // Close popup when it loses focus — with longer delay
   popupWindow.on('blur', () => {
-    if (popupWindow && !popupWindow.isDestroyed()) {
-      // Small delay to allow clicking on result window
-      setTimeout(() => {
-        if (popupWindow && !popupWindow.isDestroyed() && !popupWindow.isFocused()) {
-          popupWindow.close();
-        }
-      }, 200);
-    }
+    schedulePopupClose();
   });
 
   popupWindow.on('closed', () => {
     popupWindow = null;
   });
+}
+
+function schedulePopupClose() {
+  if (popupCloseTimeout) clearTimeout(popupCloseTimeout);
+
+  popupCloseTimeout = setTimeout(() => {
+    // Don't close if result window is open
+    if (resultWindow && !resultWindow.isDestroyed()) {
+      console.log('[Popup] Result window open, not closing popup');
+      popupCloseTimeout = null;
+      return;
+    }
+
+    if (popupWindow && !popupWindow.isDestroyed() && !popupWindow.isFocused()) {
+      // Check if mouse is over the popup bounds
+      const popupBounds = popupWindow.getBounds();
+      const cursorPoint = screen.getCursorScreenPoint();
+      const isOverPopup = cursorPoint.x >= popupBounds.x && cursorPoint.x <= popupBounds.x + popupBounds.width &&
+                          cursorPoint.y >= popupBounds.y && cursorPoint.y <= popupBounds.y + popupBounds.height;
+
+      if (isOverPopup) {
+        console.log('[Popup] Mouse over popup, deferring close');
+        schedulePopupClose(); // Re-schedule
+        return;
+      }
+
+      popupWindow.close();
+    }
+    popupCloseTimeout = null;
+  }, 800);
 }
 
 // --- Result Window ---
@@ -383,8 +434,8 @@ function createResultWindow(actionData) {
   const cursorPoint = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursorPoint);
 
-  const resultWidth = 480;
-  const resultHeight = 400;
+  const resultWidth = 520;
+  const resultHeight = 450;
 
   let x = cursorPoint.x - resultWidth / 2;
   let y = cursorPoint.y + 20;
@@ -410,7 +461,7 @@ function createResultWindow(actionData) {
     resizable: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    minWidth: 300,
+    minWidth: 320,
     minHeight: 200,
     show: false,
     webPreferences: {
@@ -431,6 +482,11 @@ function createResultWindow(actionData) {
   resultWindow.on('closed', () => {
     resultWindow = null;
   });
+
+  // Also schedule close when result window blurs (with popup check)
+  resultWindow.on('blur', () => {
+    // Don't auto-close result window on blur — user might want to read
+  });
 }
 
 // --- Settings Window ---
@@ -447,7 +503,7 @@ function createSettingsWindow() {
     transparent: false,
     resizable: true,
     show: false,
-    backgroundColor: '#0f0f1a',
+    backgroundColor: '#0d0d0d',
     minWidth: 700,
     minHeight: 500,
     webPreferences: {
@@ -481,6 +537,17 @@ function setupIPC() {
     clipboard.writeText(text);
   });
 
+  // Paste to previously focused window
+  ipcMain.on('paste-to-active-window', () => {
+    if (previousFocusedWindow && !previousFocusedWindow.isDestroyed()) {
+      previousFocusedWindow.focus();
+      previousFocusedWindow.webContents.paste();
+      console.log('[AutoPaste] Pasted to previous window');
+    } else {
+      console.log('[AutoPaste] No previous window to paste to');
+    }
+  });
+
   // Close window
   ipcMain.on('close-window', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
@@ -503,8 +570,10 @@ function setupIPC() {
     return BACKEND_URL;
   });
 
-  // Get auth token for API communication
-  ipcMain.handle('get-auth-token', () => authToken);
+  // Get auth token (captured from backend stdout)
+  ipcMain.handle('get-auth-token', () => {
+    return authToken;
+  });
 
   // Pin/unpin window
   ipcMain.on('toggle-pin', (event) => {
@@ -519,5 +588,45 @@ function setupIPC() {
   // Update hotkey
   ipcMain.on('update-hotkey', (event, newHotkey) => {
     registerHotkey(newHotkey);
+  });
+
+  // Save file dialog for export
+  ipcMain.handle('save-file-dialog', async (event, { defaultName, content }) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showSaveDialog(win, {
+      title: 'Export Result',
+      defaultPath: defaultName || 'rightclick-ai-result.md',
+      filters: [
+        { name: 'Markdown', extensions: ['md'] },
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+
+    if (!result.canceled && result.filePath) {
+      fs.writeFileSync(result.filePath, content, 'utf-8');
+      return { success: true, filePath: result.filePath };
+    }
+    return { success: false };
+  });
+
+  // Get auto-paste setting
+  ipcMain.handle('get-auto-paste', async () => {
+    try {
+      const http = require('http');
+      const data = await new Promise((resolve, reject) => {
+        http.get(`${BACKEND_URL}/api/settings`, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            try { resolve(JSON.parse(body)); }
+            catch (e) { reject(e); }
+          });
+        }).on('error', reject);
+      });
+      return data.auto_paste || false;
+    } catch {
+      return false;
+    }
   });
 }

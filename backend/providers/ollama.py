@@ -53,7 +53,13 @@ class OllamaProvider(BaseProvider):
     
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url.rstrip("/")
-        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
+        self._client = None
+    
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
+        return self._client
     
     async def generate(
         self,
@@ -93,13 +99,12 @@ class OllamaProvider(BaseProvider):
         
         # Retry the initial connection/stream setup
         async def _start_stream():
-            client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
-            stream_ctx = client.stream("POST", "/api/chat", json=payload)
+            stream_ctx = self.client.stream("POST", "/api/chat", json=payload)
             response = await stream_ctx.__aenter__()
             response.raise_for_status()
-            return client, response
+            return response
         
-        client, response = await _retry_with_backoff(_start_stream)
+        response = await _retry_with_backoff(_start_stream)
         try:
             async for line in response.aiter_lines():
                 if line:
@@ -111,7 +116,7 @@ class OllamaProvider(BaseProvider):
                     if data.get("done", False):
                         break
         finally:
-            await client.aclose()
+            pass
     
     async def list_models(self) -> list[str]:
         try:

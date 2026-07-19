@@ -1,10 +1,11 @@
 /**
  * Right Click AI — Popup Logic
- * Handles action menu display and user interaction.
+ * Handles action menu display, keyboard shortcuts, and auto-paste.
  */
 
 let clipboardData = null;
 let detectedType = 'text';
+let currentActions = [];
 
 const LANGUAGES = [
   { code: 'id', name: 'Indonesia', flag: '🇮🇩' },
@@ -19,19 +20,31 @@ const LANGUAGES = [
   { code: 'pt', name: 'Português', flag: '🇧🇷' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'th', name: 'ไทย', flag: '🇹🇭' },
-  { code: 'vi', name: 'Tiếng Việt', flag: '🇻🇳' },
+  { code: 'vi', name: 'Tieng Viet', flag: 'VN' },
   { code: 'ms', name: 'Melayu', flag: '🇲🇾' },
 ];
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Register IPC listener BEFORE any async ops (prevents race condition)
   window.rightClickAI.onClipboardData(async (data) => {
     clipboardData = data;
     await processClipboard(data);
   });
 
-  initAPI();
+  await initAPI();
+
+  // Auto-paste checkbox
+  const autoPasteCheckbox = document.getElementById('autoPasteCheck');
+  try {
+    autoPasteCheckbox.checked = await window.rightClickAI.getAutoPaste();
+  } catch (e) {
+    autoPasteCheckbox.checked = false;
+  }
+
+  autoPasteCheckbox.addEventListener('change', () => {
+    updateSettings({ auto_paste: autoPasteCheckbox.checked }).catch(console.warn);
+  });
 
   // Ask AI input
   document.getElementById('askAiInput').addEventListener('keydown', (e) => {
@@ -50,8 +63,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Keyboard navigation
   document.addEventListener('keydown', (e) => {
+    // Don't intercept when typing in the Ask AI input
+    if (document.activeElement === document.getElementById('askAiInput')) {
+      if (e.key === 'Escape') {
+        document.getElementById('askAiInput').blur();
+      }
+      return;
+    }
+
     if (e.key === 'Escape') {
       window.rightClickAI.closeWindow();
+      return;
+    }
+
+    // Press 1-9 to trigger action
+    if (e.key >= '1' && e.key <= '9') {
+      const idx = parseInt(e.key) - 1;
+      if (idx < currentActions.length) {
+        e.preventDefault();
+        onActionClick(currentActions[idx]);
+      }
+      return;
+    }
+
+    // Press / to focus the Ask AI input
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      document.getElementById('askAiInput').focus();
     }
   });
 });
@@ -65,7 +103,7 @@ async function processClipboard(data) {
 
   // Set preview text
   if (data.hasImage) {
-    previewText.textContent = '🖼️ Gambar dari clipboard';
+    previewText.textContent = '\u{1F5BC}\uFE0F Gambar dari clipboard';
   } else if (data.text) {
     const preview = data.text.substring(0, 60).replace(/\n/g, ' ');
     previewText.textContent = preview + (data.text.length > 60 ? '...' : '');
@@ -77,9 +115,9 @@ async function processClipboard(data) {
     detectedType = result.content_type;
 
     // Show content type badge
-    const typeIcons = { text: '📝', code: '💻', image: '🖼️' };
+    const typeIcons = { text: '\u{1F4DD}', code: '\u{1F4BB}', image: '\u{1F5BC}\uFE0F' };
     const typeLabels = { text: 'Teks', code: 'Kode', image: 'Gambar' };
-    document.getElementById('contentTypeIcon').textContent = typeIcons[detectedType] || '📝';
+    document.getElementById('contentTypeIcon').textContent = typeIcons[detectedType] || '\u{1F4DD}';
     document.getElementById('contentTypeLabel').textContent = typeLabels[detectedType] || 'Teks';
     contentTypeBadge.style.display = 'flex';
 
@@ -93,10 +131,10 @@ async function processClipboard(data) {
     showPopupError('Backend tidak tersedia. Pastikan aplikasi berjalan.');
     // Fallback: show default actions
     renderActions([
-      { id: 'translate', name: 'Terjemahkan', icon: '🌐', description: 'Terjemahkan teks' },
-      { id: 'explain', name: 'Jelaskan', icon: '📖', description: 'Jelaskan dengan sederhana' },
-      { id: 'summarize', name: 'Ringkas', icon: '📝', description: 'Buat ringkasan' },
-      { id: 'fix_writing', name: 'Perbaiki Tulisan', icon: '✍️', description: 'Perbaiki grammar' },
+      { id: 'translate', name: 'Terjemahkan', icon: '\u{1F310}', description: 'Terjemahkan teks' },
+      { id: 'explain', name: 'Jelaskan', icon: '\u{1F4D6}', description: 'Jelaskan dengan sederhana' },
+      { id: 'summarize', name: 'Ringkas', icon: '\u{1F4DD}', description: 'Buat ringkasan' },
+      { id: 'fix_writing', name: 'Perbaiki Tulisan', icon: '\u270D\uFE0F', description: 'Perbaiki grammar' },
     ]);
     askAiContainer.style.display = 'block';
   }
@@ -106,11 +144,15 @@ async function processClipboard(data) {
 function renderActions(actions) {
   const actionList = document.getElementById('actionList');
   actionList.innerHTML = '';
+  currentActions = actions;
 
   actions.forEach((action, index) => {
     const item = document.createElement('div');
     item.className = 'action-item animate-slide-up';
     item.style.animationDelay = `${index * 0.04}s`;
+
+    const shortcutNum = index + 1;
+    const shortcutDisplay = shortcutNum <= 9 ? `<span class="kbd">${shortcutNum}</span>` : '';
 
     item.innerHTML = `
       <div class="action-icon">${action.icon}</div>
@@ -118,7 +160,10 @@ function renderActions(actions) {
         <div class="action-name">${action.name}</div>
         <div class="action-desc">${action.description}</div>
       </div>
-      <div class="action-arrow">→</div>
+      <div class="action-shortcut">
+        ${shortcutDisplay}
+        <span class="action-arrow">\u2192</span>
+      </div>
     `;
 
     item.addEventListener('click', () => onActionClick(action));
@@ -195,9 +240,9 @@ function showPopupError(message) {
   const actionList = document.getElementById('actionList');
   actionList.innerHTML = `
     <div style="text-align:center;padding:var(--space-xl);color:var(--text-tertiary)">
-      <div style="font-size:2rem;margin-bottom:var(--space-sm)">⚠️</div>
+      <div style="font-size:2rem;margin-bottom:var(--space-sm)">\u26A0\uFE0F</div>
       <div>${message}</div>
       <button class="btn btn-ghost" style="margin-top:var(--space-md)"
-              onclick="window.rightClickAI.openSettings()">⚙️ Buka Settings</button>
+              onclick="window.rightClickAI.openSettings()">\u2699\uFE0F Buka Settings</button>
     </div>`;
 }
