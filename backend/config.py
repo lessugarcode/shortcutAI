@@ -104,13 +104,15 @@ class ConfigManager:
         if CONFIG_FILE.exists():
             try:
                 data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-                # Decrypt API keys on load; plaintext keys survive migration
                 for provider in ["openai", "gemini", "anthropic", "openrouter"]:
                     if data.get(provider, {}).get("api_key"):
                         try:
-                            data[provider]["api_key"] = decrypt_api_key(data[provider]["api_key"])
+                            # Try new-style decrypt (provider_name -> str|None)
+                            decrypted = decrypt_api_key(provider)
+                            if decrypted:
+                                data[provider]["api_key"] = decrypted
                         except Exception:
-                            pass  # Already plaintext, will be encrypted on next save
+                            pass  # Keep as-is if decryption fails
                 return AppSettings(**data)
             except Exception as e:
                 logger.warning(f"Failed to load settings: {e}")
@@ -119,10 +121,12 @@ class ConfigManager:
     def save_settings(self, settings: AppSettings) -> None:
         self._settings = settings
         data = settings.model_dump()
-        # Encrypt API keys before saving
         for provider in ["openai", "gemini", "anthropic", "openrouter"]:
             if data.get(provider, {}).get("api_key"):
-                data[provider]["api_key"] = encrypt_api_key(data[provider]["api_key"])
+                # Use new-style encrypt (provider_name, api_key)
+                encrypt_api_key(provider, data[provider]["api_key"])
+                # Clear plaintext from file for security
+                data[provider]["api_key"] = "[stored-in-credential-manager]"
         CONFIG_FILE.write_text(
             json.dumps(data, indent=2),
             encoding="utf-8"
