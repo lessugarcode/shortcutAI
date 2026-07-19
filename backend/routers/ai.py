@@ -1,18 +1,24 @@
 """
 Right Click AI — AI Router
-API endpoints for AI actions.
+API endpoints for AI actions, history, and export.
 """
 
 import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from services.actions import execute_action, execute_action_stream, get_provider
 from services.context_detector import detect_content_type
+from services.history import (
+    get_history,
+    search_history,
+    delete_interaction,
+    get_interactions_by_ids,
+)
 from config import config_manager
 
 logger = logging.getLogger(__name__)
@@ -55,6 +61,10 @@ class ProviderStatus(BaseModel):
     enabled: bool
     healthy: bool
     models: list[str]
+
+
+class ExportRequest(BaseModel):
+    ids: list[int]
 
 
 # --- Endpoints ---
@@ -179,3 +189,58 @@ async def list_providers() -> list[ProviderStatus]:
         ))
     
     return results
+
+
+# --- History Endpoints ---
+
+@router.get("/history")
+async def list_history(limit: int = Query(default=50, le=200), offset: int = 0):
+    """Get recent AI interaction history."""
+    items = get_history(limit=limit, offset=offset)
+    return {"items": items, "limit": limit, "offset": offset}
+
+
+@router.get("/history/search")
+async def search_history_endpoint(q: str = Query(..., min_length=1), limit: int = Query(default=50, le=200)):
+    """Search interaction history by content or response."""
+    items = search_history(query=q, limit=limit)
+    return {"items": items, "query": q, "limit": limit}
+
+
+@router.delete("/history/{interaction_id}")
+async def delete_history_item(interaction_id: int):
+    """Delete a single history item by ID."""
+    deleted = delete_interaction(interaction_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="History item not found")
+    return {"deleted": True, "id": interaction_id}
+
+
+# --- Export Endpoint ---
+
+@router.post("/export")
+async def export_history(req: ExportRequest):
+    """Export selected history items as markdown file download."""
+    if not req.ids:
+        raise HTTPException(status_code=400, detail="No IDs provided")
+    
+    items = get_interactions_by_ids(req.ids)
+    if not items:
+        raise HTTPException(status_code=404, detail="No matching history items found")
+    
+    lines = ["# Right Click AI — Exported History\n"]
+    for item in items:
+        lines.append(f"## {item['action_id']} — {item.get('provider', 'unknown')}/{item.get('model', 'unknown')}")
+        lines.append(f"*{item.get('created_at', '')}*\n")
+        if item.get('content_preview'):
+            lines.append(f"**Input:** {item['content_preview']}\n")
+        if item.get('response'):
+            lines.append(f"**Response:**\n\n{item['response']}\n")
+        lines.append("---\n")
+    
+    markdown = "\n".join(lines)
+    return PlainTextResponse(
+        content=markdown,
+        media_type="text/markdown",
+        headers={"Content-Disposition": "attachment; filename=rightclick-ai-export.md"},
+    )

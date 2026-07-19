@@ -66,6 +66,9 @@ class AppSettings(BaseModel):
     
     # Streaming
     stream_responses: bool = True
+    
+    # Auto-paste
+    auto_paste: bool = False
 
 
 class CustomPrompt(BaseModel):

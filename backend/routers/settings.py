@@ -26,6 +26,7 @@ class UpdateSettingsRequest(BaseModel):
     theme: Optional[str] = None
     active_provider: Optional[str] = None
     stream_responses: Optional[bool] = None
+    auto_paste: Optional[bool] = None
     ollama: Optional[dict] = None
     openai: Optional[dict] = None
     gemini: Optional[dict] = None
