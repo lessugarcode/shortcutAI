@@ -8,6 +8,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('rightClickAI', {
   // Backend communication
   getBackendUrl: () => ipcRenderer.invoke('get-backend-url'),
+  getAuthToken: () => ipcRenderer.invoke('get-auth-token'),
 
   // Window actions
   closeWindow: () => ipcRenderer.send('close-window'),

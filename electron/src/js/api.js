@@ -4,11 +4,28 @@
  */
 
 let BACKEND_URL = 'http://127.0.0.1:8765';
+let AUTH_TOKEN = null;
 
-// Initialize backend URL from Electron
+/**
+ * Build headers with auth token for all API requests.
+ */
+function apiHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (AUTH_TOKEN) {
+    headers['X-Auth-Token'] = AUTH_TOKEN;
+  }
+  return headers;
+}
+
+// Initialize backend URL and auth token from Electron
 async function initAPI() {
   if (window.rightClickAI) {
     BACKEND_URL = await window.rightClickAI.getBackendUrl();
+    try {
+      AUTH_TOKEN = await window.rightClickAI.getAuthToken();
+    } catch (e) {
+      console.warn('Failed to get auth token:', e);
+    }
   }
 }
 
@@ -18,7 +35,7 @@ async function initAPI() {
 async function detectContent(content, hasImage = false) {
   const res = await fetch(`${BACKEND_URL}/api/ai/detect`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ content, has_image: hasImage }),
   });
   if (!res.ok) throw new Error(`Detection failed: ${res.status}`);
@@ -41,7 +58,7 @@ function executeActionStream(params, onChunk, onDone, onError) {
 
   fetch(`${BACKEND_URL}/api/ai/action`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ ...params, stream: true }),
     signal: controller.signal,
   })
@@ -102,7 +119,9 @@ function executeActionStream(params, onChunk, onDone, onError) {
  * Get app settings.
  */
 async function getSettings() {
-  const res = await fetch(`${BACKEND_URL}/api/settings`);
+  const res = await fetch(`${BACKEND_URL}/api/settings`, {
+    headers: apiHeaders(),
+  });
   if (!res.ok) throw new Error(`Settings fetch failed: ${res.status}`);
   return res.json();
 }
@@ -113,7 +132,7 @@ async function getSettings() {
 async function updateSettings(updates) {
   const res = await fetch(`${BACKEND_URL}/api/settings`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`Settings update failed: ${res.status}`);
@@ -124,7 +143,9 @@ async function updateSettings(updates) {
  * Get custom prompts.
  */
 async function getCustomPrompts() {
-  const res = await fetch(`${BACKEND_URL}/api/settings/prompts`);
+  const res = await fetch(`${BACKEND_URL}/api/settings/prompts`, {
+    headers: apiHeaders(),
+  });
   if (!res.ok) throw new Error(`Prompts fetch failed: ${res.status}`);
   return res.json();
 }
@@ -133,7 +154,9 @@ async function getCustomPrompts() {
  * Get available providers and their status.
  */
 async function getProviders() {
-  const res = await fetch(`${BACKEND_URL}/api/ai/providers`);
+  const res = await fetch(`${BACKEND_URL}/api/ai/providers`, {
+    headers: apiHeaders(),
+  });
   if (!res.ok) throw new Error(`Providers fetch failed: ${res.status}`);
   return res.json();
 }

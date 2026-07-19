@@ -28,6 +28,7 @@ let settingsWindow = null;
 let backendProcess = null;
 let isQuitting = false;
 let isSpawningBackend = false;
+let authToken = null;
 
 const BACKEND_URL = 'http://127.0.0.1:8765';
 const DEFAULT_HOTKEY = 'CommandOrControl+Shift+Q';
@@ -128,7 +129,14 @@ function spawnBackend() {
   });
 
   backendProcess.stdout.on('data', (data) => {
-    console.log(`[Backend] ${data.toString().trim()}`);
+    const text = data.toString().trim();
+    console.log(`[Backend] ${text}`);
+    // Capture the auth token for secure API communication
+    const tokenMatch = text.match(/^AUTH_TOKEN:\s*(.+)$/);
+    if (tokenMatch) {
+      authToken = tokenMatch[1];
+      console.log('[Backend] Auth token captured');
+    }
   });
 
   backendProcess.stderr.on('data', (data) => {
@@ -494,6 +502,9 @@ function setupIPC() {
   ipcMain.handle('get-backend-url', () => {
     return BACKEND_URL;
   });
+
+  // Get auth token for API communication
+  ipcMain.handle('get-auth-token', () => authToken);
 
   // Pin/unpin window
   ipcMain.on('toggle-pin', (event) => {
