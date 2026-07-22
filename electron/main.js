@@ -1,5 +1,5 @@
 /**
- * Right Click AI — Electron Main Process
+ * shortcutAI — Electron Main Process
  * 
  * Manages system tray, global hotkeys, window creation,
  * and clipboard reading for the AI assistant.
@@ -241,11 +241,11 @@ function createTray() {
   }
 
   tray = new Tray(trayIcon);
-  tray.setToolTip('Right Click AI — Ctrl+Shift+Q');
+  tray.setToolTip('shortcutAI — Ctrl+Shift+Q');
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '🧠 Right Click AI',
+      label: '🧠 shortcutAI',
       enabled: false,
     },
     { type: 'separator' },

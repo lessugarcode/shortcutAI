@@ -1,5 +1,5 @@
 """
-Right Click AI — OpenRouter Provider
+shortcutAI — OpenRouter Provider
 BYOK support for OpenRouter (access to hundreds of models with one API key).
 Uses OpenAI-compatible API format.
 """
@@ -30,7 +30,7 @@ class OpenRouterProvider(BaseProvider):
             base_url=base_url,
             default_headers={
                 "HTTP-Referer": "https://rightclick-ai.app",
-                "X-Title": "Right Click AI",
+                "X-Title": "shortcutAI",
             }
         )
     

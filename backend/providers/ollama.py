@@ -1,5 +1,5 @@
 """
-Right Click AI — Ollama Provider
+shortcutAI — Ollama Provider
 Local AI model support via Ollama API.
 """
 

@@ -1,5 +1,5 @@
 """
-Right Click AI — Settings Router
+shortcutAI — Settings Router
 API endpoints for managing app settings and custom prompts.
 """
 

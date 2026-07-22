@@ -8,7 +8,7 @@
     "dev": "electron . --dev"
   },
   "keywords": ["ai", "context-menu", "productivity", "windows"],
-  "author": "Right Click AI",
+  "author": "shortcutAI",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {

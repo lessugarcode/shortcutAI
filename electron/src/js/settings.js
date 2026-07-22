@@ -1,5 +1,5 @@
 /**
- * Right Click AI — Settings Logic
+ * shortcutAI — Settings Logic
  * Manages settings UI, provider configuration, custom prompts, and history.
  */
 

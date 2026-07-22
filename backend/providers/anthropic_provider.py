@@ -1,5 +1,5 @@
 """
-Right Click AI — Anthropic Provider
+shortcutAI — Anthropic Provider
 BYOK support for Anthropic Claude API.
 """
 

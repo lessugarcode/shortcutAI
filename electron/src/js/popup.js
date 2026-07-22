@@ -1,5 +1,5 @@
 /**
- * Right Click AI — Popup Logic
+ * shortcutAI — Popup Logic
  * Handles action menu display, keyboard shortcuts, and auto-paste.
  */
 

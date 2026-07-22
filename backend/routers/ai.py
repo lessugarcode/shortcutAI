@@ -1,5 +1,5 @@
 """
-Right Click AI — AI Router
+shortcutAI — AI Router
 API endpoints for AI actions, history, and export.
 """
 
@@ -228,7 +228,7 @@ async def export_history(req: ExportRequest):
     if not items:
         raise HTTPException(status_code=404, detail="No matching history items found")
     
-    lines = ["# Right Click AI — Exported History\n"]
+    lines = ["# shortcutAI — Exported History\n"]
     for item in items:
         lines.append(f"## {item['action_id']} — {item.get('provider', 'unknown')}/{item.get('model', 'unknown')}")
         lines.append(f"*{item.get('created_at', '')}*\n")

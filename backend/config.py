@@ -1,5 +1,5 @@
 """
-Right Click AI — Configuration Management
+shortcutAI — Configuration Management
 Handles loading/saving settings, API keys, and custom prompts.
 """
 

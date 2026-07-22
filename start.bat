@@ -1,8 +1,8 @@
 @echo off
-title Right Click AI
+title shortcutAI
 echo.
 echo  ==============================
-echo   Right Click AI - Starting...
+echo   shortcutAI - Starting...
 echo  ==============================
 echo.
 
@@ -49,4 +49,4 @@ npx electron .
 cd ..
 
 echo.
-echo [Stopped] Right Click AI has been closed.
+echo [Stopped] shortcutAI has been closed.

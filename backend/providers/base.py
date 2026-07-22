@@ -1,5 +1,5 @@
 """
-Right Click AI — Base AI Provider
+shortcutAI — Base AI Provider
 Abstract base class for all AI providers.
 """
 

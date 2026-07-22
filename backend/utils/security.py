@@ -1,5 +1,5 @@
 """
-Right Click AI — Security Utilities
+shortcutAI — Security Utilities
 Handles API key encryption and secure storage.
 
 Uses OS-native credential storage via keyring when available:

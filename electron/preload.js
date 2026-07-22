@@ -1,5 +1,5 @@
 /**
- * Right Click AI — Preload Script
+ * shortcutAI — Preload Script
  * Exposes safe IPC bridge to renderer processes.
  */
 

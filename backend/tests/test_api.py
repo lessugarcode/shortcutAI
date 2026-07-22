@@ -1,5 +1,5 @@
 """
-End-to-end integration test for Right Click AI backend.
+End-to-end integration test for shortcutAI backend.
 Tests all API endpoints including new history, export, and rate limiting.
 """
 import sys, os, asyncio
@@ -90,7 +90,7 @@ async def test_health(c, base, h):
 async def test_root(c, base, h):
     r = await c.get(f"{base}/", timeout=5)
     assert r.status_code == 200
-    assert r.json()["app"] == "Right Click AI"
+    assert r.json()["app"] == "shortcutAI"
 
 
 async def test_detect_text(c, base, h):

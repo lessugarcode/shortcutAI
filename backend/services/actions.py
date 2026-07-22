@@ -1,5 +1,5 @@
 """
-Right Click AI — AI Action Service
+shortcutAI — AI Action Service
 Orchestrates AI actions: resolves prompts, selects providers, and executes.
 """
 

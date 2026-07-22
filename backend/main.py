@@ -1,5 +1,5 @@
 """
-Right Click AI — Backend Server
+shortcutAI — Backend Server
 FastAPI application entry point.
 """
 
@@ -29,7 +29,7 @@ logger = logging.getLogger("rightclick-ai")
 
 # --- App ---
 app = FastAPI(
-    title="Right Click AI",
+    title="shortcutAI",
     description="AI-powered right-click context menu assistant",
     version="0.1.0",
 )
@@ -74,7 +74,7 @@ app.include_router(settings.router)
 @app.get("/")
 async def root():
     return {
-        "app": "Right Click AI",
+        "app": "shortcutAI",
         "version": "0.1.0",
         "status": "running",
     }

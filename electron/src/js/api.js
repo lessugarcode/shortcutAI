@@ -1,5 +1,5 @@
 /**
- * Right Click AI — API Communication Layer
+ * shortcutAI — API Communication Layer
  * Handles all HTTP requests to the Python backend.
  */
 

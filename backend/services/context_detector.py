@@ -1,5 +1,5 @@
 """
-Right Click AI — Context Detector
+shortcutAI — Context Detector
 Detects whether clipboard content is text, code, or image.
 """
 

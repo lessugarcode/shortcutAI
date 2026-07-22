@@ -1,5 +1,5 @@
 """
-Right Click AI — Google Gemini Provider
+shortcutAI — Google Gemini Provider
 BYOK support for Google Gemini API.
 """
 

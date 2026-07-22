@@ -1,5 +1,5 @@
 /**
- * Right Click AI — Result Widget Logic
+ * shortcutAI — Result Widget Logic
  * Handles streaming AI response display with rich markdown rendering.
  */
 

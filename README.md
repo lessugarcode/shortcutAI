@@ -1,4 +1,4 @@
-# ⚡ Right Click AI
+# ⚡ shortcutAI
 
 > Asisten AI yang terintegrasi langsung ke workflow Windows kamu. Sorot teks, tekan hotkey, dan dapatkan jawaban instan.
 

@@ -1,4 +1,4 @@
-# ⚡ Right Click AI
+# ⚡ shortcutAI
 
 > AI assistant integrated directly into your Windows workflow. Highlight text, press a hotkey, get instant answers.
 

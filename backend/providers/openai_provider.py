@@ -1,5 +1,5 @@
 """
-Right Click AI — OpenAI Provider
+shortcutAI — OpenAI Provider
 BYOK support for OpenAI API (GPT-4o, etc.)
 """
 

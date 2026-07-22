@@ -1,5 +1,5 @@
 """
-Right Click AI — Rate Limiter
+shortcutAI — Rate Limiter
 Simple in-memory token-bucket. No external dependencies.
 """
 
